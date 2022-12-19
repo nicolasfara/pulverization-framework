@@ -1,0 +1,3 @@
+headers = rabbitmq-c/amqp.h rabbitmq-c/framing.h rabbitmq-c/ssl_socket.h rabbitmq-c/tcp_socket.h
+headerFilter = rabbitmq-c/** rabbitmq-c/amqp.h rabbitmq-c/framing.h rabbitmq-c/ssl_socket.h rabbitmq-c/tcp_socket.h
+package = librabbitmq

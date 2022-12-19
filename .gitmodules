@@ -1,0 +1,3 @@
+[submodule "rabbitmq-platform/native/rabbitmq-c"]
+	path = rabbitmq-platform/native/rabbitmq-c
+	url = git@github.com:alanxz/rabbitmq-c.git
