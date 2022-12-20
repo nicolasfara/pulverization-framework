@@ -2,6 +2,7 @@ package example.units
 
 import example.components.CommunicationComp
 import example.components.communicationLogic
+import example.components.config
 import it.nicolasfarabegoli.pulverization.dsl.getDeviceConfiguration
 import it.nicolasfarabegoli.pulverization.platforms.rabbitmq.RabbitmqCommunicator
 import it.nicolasfarabegoli.pulverization.platforms.rabbitmq.defaultRabbitMQRemotePlace

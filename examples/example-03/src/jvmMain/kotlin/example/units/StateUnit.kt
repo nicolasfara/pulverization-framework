@@ -1,6 +1,7 @@
 package example.units
 
 import example.components.StateComp
+import example.components.config
 import example.components.stateLogic
 import it.nicolasfarabegoli.pulverization.dsl.getDeviceConfiguration
 import it.nicolasfarabegoli.pulverization.platforms.rabbitmq.RabbitmqCommunicator

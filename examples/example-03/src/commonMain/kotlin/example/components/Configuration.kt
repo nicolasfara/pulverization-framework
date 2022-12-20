@@ -1,4 +1,4 @@
-package example.units
+package example.components
 
 import it.nicolasfarabegoli.pulverization.core.BehaviourComponent
 import it.nicolasfarabegoli.pulverization.core.CommunicationComponent

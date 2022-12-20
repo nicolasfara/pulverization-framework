@@ -10,13 +10,10 @@ import it.nicolasfarabegoli.pulverization.runtime.dsl.PulverizationPlatformScope
 import it.nicolasfarabegoli.pulverization.runtime.dsl.pulverizationPlatform
 import kotlinx.coroutines.runBlocking
 
-/**
- * State-Behaviour entrypoint.
- */
 fun main() = runBlocking {
     val platform = pulverizationPlatform(config.getDeviceConfiguration("gps")!!) {
         sensorsLogic(LocalizationSensor(), ::mySensorsLogic)
-        withPlatform { RabbitmqCommunicator(hostname = "rabbitmq") }
+        withPlatform { RabbitmqCommunicator() }
         withRemotePlace { defaultRabbitMQRemotePlace() }
     }
     val jobs = platform.start()

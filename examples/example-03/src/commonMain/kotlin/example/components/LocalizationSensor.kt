@@ -4,6 +4,7 @@ import it.nicolasfarabegoli.pulverization.component.Context
 import it.nicolasfarabegoli.pulverization.core.Sensor
 import it.nicolasfarabegoli.pulverization.core.SensorsContainer
 import it.nicolasfarabegoli.pulverization.runtime.componentsref.BehaviourRef
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 import org.koin.core.component.inject
@@ -28,12 +29,14 @@ class LocalizationSensor : SensorsContainer() {
     }
 }
 
-suspend fun mySensorsLogic(sensors: SensorsContainer, behaviour: BehaviourRef<DeviceSensors>) {
+suspend fun mySensorsLogic(sensors: SensorsContainer, behaviour: BehaviourRef<DeviceSensors>): Unit = coroutineScope {
     sensors.get<GpsSensor> {
         repeat(10) {
             val payload = DeviceSensors(sense())
             behaviour.sendToComponent(payload)
+            println("send complete")
             delay(2.seconds)
+            println("GoOn")
         }
     }
 }
