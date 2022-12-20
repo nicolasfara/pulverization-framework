@@ -1,18 +1,15 @@
 package it.nicolasfarabegoli.pulverization.platforms.rabbitmq
 
+import com.autodesk.coroutineworker.CoroutineWorker
 import it.nicolasfarabegoli.pulverization.runtime.communication.Binding
 import it.nicolasfarabegoli.pulverization.runtime.communication.Communicator
 import it.nicolasfarabegoli.pulverization.runtime.communication.RemotePlace
 import kotlinx.cinterop.CValue
 import kotlinx.cinterop.cValue
 import kotlinx.cinterop.useContents
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.launch
 import librabbitmq.AMQP_REPLY_SUCCESS
 import librabbitmq.AMQP_RESPONSE_NORMAL
 import librabbitmq.AMQP_SASL_METHOD_PLAIN
@@ -31,6 +28,7 @@ import librabbitmq.amqp_new_connection
 import librabbitmq.amqp_rpc_reply_t
 import librabbitmq.amqp_socket_open
 import librabbitmq.amqp_tcp_socket_new
+import kotlin.coroutines.coroutineContext
 
 /**
  * Implement the [Communicator] interface relying on RabbitMQ as a platform for communications.
@@ -45,9 +43,7 @@ actual class RabbitmqCommunicator actual constructor(
 
     private var connection: amqp_connection_state_t? = null
     private val flow = MutableSharedFlow<ByteArray>(1)
-    private lateinit var receivingJobRef: Job
-    private val myJob = SupervisorJob()
-    // private val processContext = CoroutineScope(myJob)
+    private lateinit var receivingJobRef: CoroutineWorker
 
     companion object {
         private const val MAX_FRAME_SIZE = 131072
@@ -65,7 +61,7 @@ actual class RabbitmqCommunicator actual constructor(
         amqp_channel_open(connection, 1)
         amqp_get_rpc_reply(connection).dieOnAmqpError("Opening channel")
 
-        receivingJobRef = launch(myJob) {
+        receivingJobRef = CoroutineWorker.execute {
             var ret: CValue<amqp_rpc_reply_t>?
             val envelope: CValue<amqp_envelope_t> = cValue()
             while (true) {
@@ -86,20 +82,21 @@ actual class RabbitmqCommunicator actual constructor(
         amqp_connection_close(connection, AMQP_REPLY_SUCCESS).dieOnAmqpError("Closing connection")
         amqp_destroy_connection(connection).dieOnError("Ending connection")
         receivingJobRef.cancelAndJoin()
-        myJob.cancelAndJoin()
     }
 
     override suspend fun fireMessage(message: ByteArray) {
-        amqp_basic_publish(
-            connection,
-            1,
-            "amq.direct".toAMQP(), // Exchange
-            "test".toAMQP(), // routing key
-            0,
-            0,
-            null,
-            message.decodeToString().toAMQP(),
-        ).dieOnError("Send message")
+        CoroutineWorker.withContext(coroutineContext) {
+            amqp_basic_publish(
+                connection,
+                1,
+                "amq.direct".toAMQP(), // Exchange
+                "test".toAMQP(), // routing key
+                0,
+                0,
+                null,
+                message.decodeToString().toAMQP(),
+            ).dieOnError("Send message")
+        }
     }
 
     override fun receiveMessage(): Flow<ByteArray> = flow
