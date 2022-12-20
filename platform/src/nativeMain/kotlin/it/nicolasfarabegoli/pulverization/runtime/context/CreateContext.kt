@@ -7,11 +7,13 @@ import platform.posix.fclose
 import platform.posix.fgets
 import platform.posix.fopen
 
+private const val FILE_SIZE = 255
+
 internal actual suspend fun createContext(configFilePath: String): Context {
     val filePtr = fopen(configFilePath, "r") ?: error("Unable to open the file $configFilePath")
-    val contentRaw = ByteArray(255)
+    val contentRaw = ByteArray(FILE_SIZE)
     contentRaw.usePinned {
-        fgets(it.addressOf(0), 255, filePtr)
+        fgets(it.addressOf(0), FILE_SIZE, filePtr)
     }
     fclose(filePtr)
     val content = contentRaw.decodeToString()
