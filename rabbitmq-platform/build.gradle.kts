@@ -23,6 +23,11 @@ kotlin {
                 implementation("com.github.fridujo:rabbitmq-mock:1.2.0")
             }
         }
+        nativeMain {
+            dependencies {
+                implementation("com.autodesk:coroutineworker:0.8.3")
+            }
+        }
     }
 
     fun KotlinNativeTarget.librabbitmqCInterop(target: String) {
