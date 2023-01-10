@@ -46,31 +46,32 @@ tasks {
     }
 }
 
-fun KotlinMultiplatformExtension.configureDarwinCompatiblePlatforms(nativeSetup: KotlinNativeTarget.() -> Unit) {
-    macosX64(nativeSetup)
-    macosArm64(nativeSetup)
+fun KotlinMultiplatformExtension.configureDarwinCompatiblePlatforms() {
+    macosX64()
+    macosArm64()
 
-    ios(nativeSetup)
-    iosSimulatorArm64(nativeSetup)
-    tvos(nativeSetup)
-    tvosSimulatorArm64(nativeSetup)
-    // Disabled due to https://youtrack.jetbrains.com/issue/KT-54814
-    // watchos(nativeSetup)
-    // watchosSimulatorArm64(nativeSetup)
+    iosArm64()
+    iosArm32()
+    iosSimulatorArm64()
+    tvosArm64()
+    tvosSimulatorArm64()
+    watchosArm64()
+    watchosArm32()
+    watchosSimulatorArm64()
 }
 
-fun KotlinMultiplatformExtension.configureWindowsCompatiblePlatforms(nativeSetup: KotlinNativeTarget.() -> Unit) {
-    mingwX64(nativeSetup)
+fun KotlinMultiplatformExtension.configureWindowsCompatiblePlatforms() {
+    mingwX64()
 }
 
-fun KotlinMultiplatformExtension.configureLinuxCompatiblePlatforms(nativeSetup: KotlinNativeTarget.() -> Unit) {
-    linuxX64(nativeSetup)
+fun KotlinMultiplatformExtension.configureLinuxCompatiblePlatforms() {
+    linuxX64()
 }
 
-fun KotlinMultiplatformExtension.configureAllPlatforms(nativeSetup: KotlinNativeTarget.() -> Unit) {
-    configureLinuxCompatiblePlatforms(nativeSetup)
-    configureWindowsCompatiblePlatforms(nativeSetup)
-    configureDarwinCompatiblePlatforms(nativeSetup)
+fun KotlinMultiplatformExtension.configureAllPlatforms() {
+    configureLinuxCompatiblePlatforms()
+    configureWindowsCompatiblePlatforms()
+    configureDarwinCompatiblePlatforms()
 }
 
 allprojects {
@@ -113,36 +114,46 @@ allprojects {
             }
         }
 
-        sourceSets {
-            val commonMain by getting {
-                dependencies {
-                    implementation(rootProject.libs.koin.core)
-                    implementation(rootProject.libs.kotlinx.coroutines.core)
-                }
+        val commonMain by sourceSets.getting {
+            dependencies {
+                implementation(rootProject.libs.koin.core)
+                implementation(rootProject.libs.kotlinx.coroutines.core)
             }
-            val commonTest by getting {
-                dependencies {
-                    implementation(rootProject.libs.bundles.kotest.common)
-                    implementation(rootProject.libs.koin.test)
-                }
+        }
+        val commonTest by sourceSets.getting {
+            dependencies {
+                implementation(rootProject.libs.bundles.kotest.common)
+                implementation(rootProject.libs.koin.test)
             }
-            val jvmTest by getting {
-                dependencies {
-                    implementation(rootProject.libs.kotest.runner.junit5)
-                }
+        }
+        val jvmTest by sourceSets.getting {
+            dependencies {
+                implementation(rootProject.libs.kotest.runner.junit5)
             }
-            val nativeMain by creating {
-                dependsOn(commonMain)
-            }
-            val nativeTest by creating {
-                dependsOn(commonTest)
-            }
+        }
+        val nativeMain by sourceSets.creating {
+            dependsOn(commonMain)
+        }
+        val nativeTest by sourceSets.creating {
+            dependsOn(commonTest)
         }
 
         js(IR) {
             browser()
             nodejs()
             binaries.library()
+        }
+
+        val releaseStage: String? by project
+
+        when (OperatingSystem.current() to releaseStage.toBoolean()) {
+            OperatingSystem.LINUX to false -> configureLinuxCompatiblePlatforms()
+            OperatingSystem.WINDOWS to false -> configureWindowsCompatiblePlatforms()
+            OperatingSystem.MAC_OS to false -> configureDarwinCompatiblePlatforms()
+            OperatingSystem.MAC_OS to true -> configureAllPlatforms()
+            else -> throw GradleException(
+                "To cross-compile for all the platforms, a `macos` runner should be used",
+            )
         }
 
         targets.all {
@@ -153,24 +164,14 @@ allprojects {
             }
         }
 
-        val releaseStage: String? by project
-        val nativeSetup: KotlinNativeTarget.() -> Unit = {
-            compilations["main"].defaultSourceSet.dependsOn(sourceSets["nativeMain"])
-            compilations["test"].defaultSourceSet.dependsOn(sourceSets["nativeTest"])
+        // Configure all enabled Native targets
+        configure(targets.filterIsInstance<KotlinNativeTarget>()) {
+            compilations["main"].defaultSourceSet.dependsOn(nativeMain)
+            compilations["test"].defaultSourceSet.dependsOn(nativeTest)
             binaries {
                 sharedLib()
                 staticLib()
             }
-        }
-
-        when (OperatingSystem.current() to releaseStage.toBoolean()) {
-            OperatingSystem.LINUX to false -> configureLinuxCompatiblePlatforms(nativeSetup)
-            OperatingSystem.WINDOWS to false -> configureWindowsCompatiblePlatforms(nativeSetup)
-            OperatingSystem.MAC_OS to false -> configureDarwinCompatiblePlatforms(nativeSetup)
-            OperatingSystem.MAC_OS to true -> configureAllPlatforms(nativeSetup)
-            else -> throw GradleException(
-                "To cross-compile for all the platforms, a `macos` runner should be used",
-            )
         }
     }
 
